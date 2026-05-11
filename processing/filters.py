@@ -2,8 +2,8 @@ import pandas as pd
 
 
 def filter_by_log_level(
-    dataframe: pd.DataFrame,
-    log_level: str,
+        dataframe: pd.DataFrame,
+        log_level: str,
 ) -> pd.DataFrame:
     """
     Filter logs by selected log level.
@@ -18,13 +18,13 @@ def filter_by_log_level(
 
     return dataframe[
         dataframe["Level"].str.upper() == log_level.upper()
-    ]
+        ]
 
 
 def filter_by_date_range(
-    dataframe: pd.DataFrame,
-    start_date: str,
-    end_date: str,
+        dataframe: pd.DataFrame,
+        start_date: str,
+        end_date: str,
 ) -> pd.DataFrame:
     """
     Filter logs by date range.
@@ -41,13 +41,13 @@ def filter_by_date_range(
     return dataframe[
         (dataframe["Date"] >= start_date)
         & (dataframe["Date"] <= end_date)
-    ]
+        ]
 
 
 def filter_by_phrase(
-    dataframe: pd.DataFrame,
-    column: str,
-    phrase: str,
+        dataframe: pd.DataFrame,
+        column: str,
+        phrase: str,
 ) -> pd.DataFrame:
     """
     Filter rows containing selected phrase.
