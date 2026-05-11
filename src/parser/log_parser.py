@@ -47,15 +47,11 @@ def parse_log_file(file_path: str | Path) -> pd.DataFrame:
     parsed_logs = []
 
     with open(file_path, "r", encoding="utf-8") as file:
-
         for line_number, line in enumerate(file, start=1):
-
             parsed_line = parse_line(line)
 
             if parsed_line:
-
                 parsed_line["LineId"] = line_number
-
                 parsed_logs.append(parsed_line)
 
     return pd.DataFrame(parsed_logs)
@@ -74,7 +70,6 @@ def save_dataframe_to_csv(
     """
 
     output_path = Path(output_path)
-
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     dataframe.to_csv(output_path, index=False)
