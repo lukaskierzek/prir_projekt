@@ -1,22 +1,29 @@
-import pandas as pd
+from collections import Counter
+from typing import Iterable
+
+from domain.models import AnalysisResult
 
 
-def count_phrase_occurrences(
-    dataframe: pd.DataFrame,
-    column: str,
-    phrase: str
-):
-
-    return dataframe[column].str.contains(
-        phrase,
-        case=False,
-        na=False
-    ).sum()
+def count_phrase_occurrences_in_text(
+    lines: Iterable[str],
+    phrase: str,
+) -> int:
+    phrase_upper = phrase.upper()
+    return sum(1 for line in lines if phrase_upper in line.upper())
 
 
-def count_log_levels(dataframe: pd.DataFrame) -> pd.Series:
-    """
-    Count occurrences of all log levels.
-    """
+def count_levels_from_filtered_lines(lines: Iterable[str]) -> dict[str, int]:
+    counter: Counter[str] = Counter()
+    for line in lines:
+        line_upper = line.upper()
+        if " ERROR " in line_upper:
+            counter["ERROR"] += 1
+        elif " WARNING " in line_upper:
+            counter["WARNING"] += 1
+        elif " INFO " in line_upper:
+            counter["INFO"] += 1
+    return dict(counter)
 
-    return dataframe["Level"].value_counts()
+
+def phrase_counts(result: AnalysisResult) -> dict[str, int]:
+    return dict(result.phrase_counts)

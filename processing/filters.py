@@ -1,4 +1,7 @@
 import pandas as pd
+from datetime import datetime
+
+from domain.models import LogRecord
 
 
 def filter_by_log_level(
@@ -68,3 +71,24 @@ def filter_by_phrase(
             na=False,
         )
     ]
+
+
+def matches_level_filter(
+    record: LogRecord,
+    allowed_levels: tuple[str, ...],
+) -> bool:
+    if not allowed_levels:
+        return True
+    return record.level.upper() in allowed_levels
+
+
+def matches_date_range(
+    record: LogRecord,
+    date_from: datetime | None,
+    date_to: datetime | None,
+) -> bool:
+    if date_from is not None and record.timestamp < date_from:
+        return False
+    if date_to is not None and record.timestamp > date_to:
+        return False
+    return True

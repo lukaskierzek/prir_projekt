@@ -1,21 +1,25 @@
 import subprocess
 import time
 
-from prometheus_client.decorator import contextmanager
+from contextlib import contextmanager
 
 
-def run_command(command: str):
+def run_command(command: str) -> subprocess.CompletedProcess[str]:
     result = subprocess.run(
         command,
         shell=True,
         text=True,
-        capture_output=True
+        capture_output=True,
+        check=False,
     )
 
     print(result.stdout)
 
     if result.stderr:
         print(result.stderr)
+
+    return result
+
 
 @contextmanager
 def timer(name: str):

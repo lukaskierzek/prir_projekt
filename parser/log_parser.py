@@ -1,7 +1,9 @@
 from pathlib import Path
 import re
+from datetime import datetime
 
 import pandas as pd
+from domain.models import LogRecord
 
 
 LOG_PATTERN = re.compile(
@@ -31,6 +33,25 @@ def parse_line(line: str) -> dict | None:
         return None
 
     return match.groupdict()
+
+
+def parse_line_to_record(line: str, line_id: int) -> LogRecord | None:
+    parsed = parse_line(line)
+    if parsed is None:
+        return None
+
+    timestamp = datetime.strptime(
+        f"{parsed['Date']} {parsed['Time']}", "%Y-%m-%d %H:%M:%S,%f"
+    )
+    return LogRecord(
+        timestamp=timestamp,
+        level=parsed["Level"],
+        process=parsed["Process"],
+        component=parsed["Component"],
+        message=parsed["Content"],
+        raw_line=line,
+        line_id=line_id,
+    )
 
 
 def parse_log_file(file_path: str | Path) -> pd.DataFrame:

@@ -1,50 +1,26 @@
-import pandas as pd
+from domain.models import AnalysisResult
 
 
-def prepare_datetime_column(
-        dataframe: pd.DataFrame,
-) -> pd.DataFrame:
-    """
-    Create combined datetime column.
-    """
+def total_parsed_ratio(result: AnalysisResult) -> float:
+    if result.total_lines == 0:
+        return 0.0
+    return result.parsed_lines / result.total_lines
 
-    dataframe = dataframe.copy()
 
-    dataframe["Datetime"] = pd.to_datetime(
-        dataframe["Date"] + " " + dataframe["Time"],
-        format="%Y-%m-%d %H:%M:%S,%f"
+def total_matched_ratio(result: AnalysisResult) -> float:
+    if result.parsed_lines == 0:
+        return 0.0
+    return len(result.filtered_lines) / result.parsed_lines
+
+
+
+def top_error_hours(
+    result: AnalysisResult,
+    top_n: int = 5,
+) -> list[tuple[str, int]]:
+    items = sorted(
+        result.errors_per_hour.items(),
+        key=lambda item: item[1],
+        reverse=True,
     )
-
-    return dataframe
-
-
-def count_logs_per_hour(
-        dataframe: pd.DataFrame,
-) -> pd.DataFrame | pd.Series:
-    """
-    Count logs grouped by hour.
-    """
-
-    dataframe = prepare_datetime_column(dataframe)
-
-    return dataframe.groupby(
-        dataframe["Datetime"].dt.hour
-    ).size()
-
-
-def count_errors_per_hour(
-        dataframe: pd.DataFrame,
-) -> pd.Series:
-    """
-    Count ERROR logs per hour.
-    """
-
-    dataframe = prepare_datetime_column(dataframe)
-
-    errors = dataframe[
-        dataframe["Level"].str.upper() == "ERROR"
-        ]
-
-    return errors.groupby(
-        errors["Datetime"].dt.hour
-    ).size()
+    return items[:top_n]

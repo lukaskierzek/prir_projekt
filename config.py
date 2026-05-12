@@ -23,3 +23,13 @@ PLOTS_DIR = PROJECT_ROOT / "plots"
 
 # Benchmark
 DEFAULT_ROWS_DISPLAY = 10
+
+# Analysis defaults
+DEFAULT_PHRASES = ("ERROR", "WARNING", "INFO")
+DEFAULT_LEVELS: tuple[str, ...] = ()
+DEFAULT_INPUT_LOG = HADOOP_LOG_2K
+DATETIME_INPUT_FORMAT = "%Y-%m-%d %H:%M:%S"
+DATE_ONLY_INPUT_FORMAT = "%Y-%m-%d"
+
+# Reports
+REPORTS_DIR = PROJECT_ROOT / "reports"

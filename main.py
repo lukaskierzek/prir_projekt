@@ -1,104 +1,85 @@
 import argparse
+from datetime import datetime
 
-from parser.log_parser import load_and_parse_logs
-from processing.counters import (
-    count_log_levels,
-    count_phrase_occurrences,
-)
-from processing.filters import (
-    filter_by_log_level,
-    filter_by_date_range,
-)
+from config import DATE_ONLY_INPUT_FORMAT, DATETIME_INPUT_FORMAT, DEFAULT_PHRASES
+from domain.models import AnalysisConfig
+from processing.analyzer import analyze_log_file
+from report import print_report, save_filtered_lines_csv, save_report_json
+
+
+def _parse_datetime(value: str | None, is_end: bool = False) -> datetime | None:
+    if value is None:
+        return None
+    if len(value) == 10:
+        suffix = " 23:59:59.999999" if is_end else " 00:00:00.000000"
+        value = value + suffix
+        return datetime.strptime(value, f"{DATE_ONLY_INPUT_FORMAT} %H:%M:%S.%f")
+    return datetime.strptime(value, DATETIME_INPUT_FORMAT)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Log Analysis Application"
+        description="Log analysis for phrase counts, filtering and time stats."
     )
 
     parser.add_argument(
-        "--file",
+        "--input",
         required=True,
-        help="Path to log file"
+        help="Path to log file",
     )
 
     parser.add_argument(
-        "--count-levels",
-        action="store_true",
-        help="Count all log levels"
+        "--levels",
+        nargs="*",
+        default=[],
+        help="Filter by levels, e.g. ERROR WARNING INFO",
     )
 
     parser.add_argument(
-        "--filter-level",
+        "--phrases",
+        nargs="*",
+        default=list(DEFAULT_PHRASES),
+        help="Phrases to count in message content",
+    )
+
+    parser.add_argument(
+        "--from-date",
         type=str,
-        help="Filter logs by selected level"
+        help="Start datetime (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)",
     )
 
     parser.add_argument(
-        "--phrase",
+        "--to-date",
         type=str,
-        help="Search phrase in log content"
+        help="End datetime (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)",
     )
-
     parser.add_argument(
-        "--start-date",
+        "--output-json",
         type=str,
-        help="Start date YYYY-MM-DD"
+        help="Optional path to save full report as JSON",
     )
-
     parser.add_argument(
-        "--end-date",
+        "--output-filtered-csv",
         type=str,
-        help="End date YYYY-MM-DD"
+        help="Optional path to save filtered lines as CSV",
     )
 
     args = parser.parse_args()
 
-    dataframe = load_and_parse_logs(args.file)
-
-    # Count log levels
-    if args.count_levels:
-        print("\n=== LOG LEVEL COUNTS ===\n")
-        print(count_log_levels(dataframe))
-
-    # Filter by level
-    if args.filter_level:
-        filtered = filter_by_log_level(
-            dataframe,
-            args.filter_level
-        )
-
-        print(f"\n=== {args.filter_level.upper()} LOGS ===\n")
-        print(filtered.head())
-
-        print(f"\nRows found: {len(filtered)}")
-
-    # Count phrase occurrences
-    if args.phrase:
-        count = count_phrase_occurrences(
-            dataframe,
-            "Content",
-            args.phrase
-        )
-
-        print(
-            f'\nPhrase "{args.phrase}" found {count} times'
-        )
-
-    if args.start_date and args.end_date:
-        filtered = filter_by_date_range(
-            dataframe,
-            args.start_date,
-            args.end_date
-        )
-
-        print(
-            f"\n=== LOGS FROM {args.start_date} TO {args.end_date} ===\n"
-        )
-
-        print(filtered.head())
-
-        print(f"\nRows found: {len(filtered)}")
+    config = AnalysisConfig.from_iterables(
+        phrases=args.phrases,
+        levels=args.levels,
+        date_from=_parse_datetime(args.from_date),
+        date_to=_parse_datetime(args.to_date, is_end=True),
+    )
+    result = analyze_log_file(args.input, config)
+    print_report(result)
+    if args.output_json:
+        save_report_json(result, args.output_json)
+        print(f"Saved JSON report to: {args.output_json}")
+    if args.output_filtered_csv:
+        save_filtered_lines_csv(result, args.output_filtered_csv)
+        print(f"Saved filtered lines CSV to: {args.output_filtered_csv}")
 
 
 if __name__ == "__main__":
