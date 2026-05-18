@@ -3,6 +3,8 @@ from datetime import datetime
 
 from config import DATE_ONLY_INPUT_FORMAT, DATETIME_INPUT_FORMAT, DEFAULT_PHRASES
 from domain.models import AnalysisConfig
+from parallel.mpi.runner import run_mpi_token_count
+from parallel.openmp.benchmark import benchmark_openmp
 from processing.analyzer import analyze_log_file
 from report import print_report, save_filtered_lines_csv, save_report_json
 
@@ -63,6 +65,18 @@ def main():
         type=str,
         help="Optional path to save filtered lines as CSV",
     )
+    parser.add_argument(
+        "--parallel-mode",
+        choices=["none", "openmp", "mpi"],
+        default="none",
+        help="Run additional parallel token benchmark path",
+    )
+    parser.add_argument(
+        "--openmp-workers",
+        type=int,
+        default=4,
+        help="Workers for OpenMP-like Python benchmark path",
+    )
 
     args = parser.parse_args()
 
@@ -74,6 +88,22 @@ def main():
     )
     result = analyze_log_file(args.input, config)
     print_report(result)
+
+    with open(args.input, "r", encoding="utf-8") as handle:
+        lines = handle.readlines()
+
+    if args.parallel_mode == "openmp":
+        parallel_result = benchmark_openmp(lines, workers=args.openmp_workers)
+        print("\n=== OPENMP-LIKE TOKENIZATION ===")
+        for key, value in parallel_result.items():
+            print(f"{key}: {value}")
+    elif args.parallel_mode == "mpi":
+        mpi_result = run_mpi_token_count(lines)
+        if mpi_result["rank"] == 0:
+            print("\n=== MPI TOKENIZATION ===")
+            for key, value in mpi_result.items():
+                print(f"{key}: {value}")
+
     if args.output_json:
         save_report_json(result, args.output_json)
         print(f"Saved JSON report to: {args.output_json}")

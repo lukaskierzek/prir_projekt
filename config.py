@@ -13,6 +13,9 @@ PROCESSED_DATA_DIR = DATA_DIR / "processed"
 # Raw log files
 HADOOP_LOG_2K = RAW_DATA_DIR / "Hadoop_2k.log"
 
+# 200k lines
+GENERATED_200K = RAW_DATA_DIR / "Hadoop_200k.log"
+
 # Processed CSV files
 HADOOP_CSV_2K = (
         PROCESSED_DATA_DIR / "Hadoop_2k_structured.csv"
@@ -27,9 +30,15 @@ DEFAULT_ROWS_DISPLAY = 10
 # Analysis defaults
 DEFAULT_PHRASES = ("ERROR", "WARNING", "INFO")
 DEFAULT_LEVELS: tuple[str, ...] = ()
-DEFAULT_INPUT_LOG = HADOOP_LOG_2K
+DEFAULT_INPUT_LOG = GENERATED_200K
 DATETIME_INPUT_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_ONLY_INPUT_FORMAT = "%Y-%m-%d"
 
 # Reports
 REPORTS_DIR = PROJECT_ROOT / "reports"
+
+OPENMP_WORKERS = 4
+
+DEFAULT_CHUNK_SIZE = 1000
+MPI_DEFAULT_CHUNK_LINES = 5000
+MPI_ROOT_RANK = 0
