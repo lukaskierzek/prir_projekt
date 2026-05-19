@@ -3,5 +3,7 @@
 __pycache__/
 .ipynb_checkpoints/
 *.pyc
-.data/processed/
+*.pyo
+*.pyd
+.pytest_cache/
 projekt.zip

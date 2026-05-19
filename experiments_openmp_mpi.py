@@ -1,22 +1,10 @@
-from config import DEFAULT_INPUT_LOG, OPENMP_WORKERS
-from parallel.mpi.runner import run_mpi_token_count
-from parallel.openmp.benchmark import benchmark_openmp
+import argparse
 
-
-def load_lines(path: str) -> list[str]:
-    with open(path, "r", encoding="utf-8") as handle:
-        return handle.readlines()
-
-
-def run_openmp_experiment(lines: list[str]) -> dict:
-    return benchmark_openmp(lines, workers=OPENMP_WORKERS)
-
-
-def run_mpi_experiment(lines: list[str]) -> dict:
-    return run_mpi_token_count(lines)
-
+from best_comparison import main as run_best_comparison
 
 if __name__ == "__main__":
-    data = load_lines(str(DEFAULT_INPUT_LOG))
-    print("OpenMP-like:", run_openmp_experiment(data))
-    print("MPI:", run_mpi_experiment(data))
+    parser = argparse.ArgumentParser(
+        description="Deprecated entrypoint. Use best_comparison.py options."
+    )
+    parser.parse_args()
+    run_best_comparison()

@@ -40,7 +40,8 @@ mpiexec -n 4 python main.py --input data/raw/Hadoop_2k.log --parallel-mode mpi
 ## Wykresy przyspieszenia i efektywności
 
 Notebook: `experiments.ipynb` (dodane komórki benchmarkowe)  
-Skrypt: `experiments_openmp_mpi.py`
+Skrypt porównawczy: `best_comparison.py`  
+Alias (deprecated): `experiments_openmp_mpi.py`
 
 ## Technologie
 
