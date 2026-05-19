@@ -25,7 +25,7 @@ def analyze_log_file(file_path: str, config: AnalysisConfig) -> AnalysisResult:
             parsed_lines += 1
             level_counts[record.level.upper()] += 1
             _update_phrase_counts(record, phrase_counts, config.phrases)
-            _update_error_hour_stats(record, errors_per_hour)
+            _update_error_hour_stats(record, errors_per_hour, config.error_type)
 
             if matches_level_filter(record, config.levels) and matches_date_range(
                 record, config.date_from, config.date_to
@@ -52,8 +52,10 @@ def _update_phrase_counts(
             phrase_counts[phrase] += 1
 
 
-def _update_error_hour_stats(record: LogRecord, errors_per_hour: Counter) -> None:
-    if record.level.upper() != "ERROR":
+def _update_error_hour_stats(
+    record: LogRecord, errors_per_hour: Counter, error_type: str
+) -> None:
+    if record.level.upper() != error_type.upper():
         return
     hour_bucket = record.timestamp.strftime("%Y-%m-%d %H:00")
     errors_per_hour[hour_bucket] += 1

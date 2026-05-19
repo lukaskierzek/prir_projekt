@@ -6,6 +6,7 @@ from domain.models import AnalysisConfig
 from parallel.mpi.runner import run_mpi_token_count
 from parallel.openmp.benchmark import benchmark_openmp
 from processing.analyzer import analyze_log_file
+from processing.statistics import top_error_hours
 from report import print_report, save_filtered_lines_csv, save_report_json
 
 
@@ -43,6 +44,12 @@ def main():
         default=list(DEFAULT_PHRASES),
         help="Phrases to count in message content",
     )
+    parser.add_argument(
+        "--phrase",
+        action="append",
+        default=[],
+        help="Single phrase to count, can be repeated",
+    )
 
     parser.add_argument(
         "--from-date",
@@ -54,6 +61,48 @@ def main():
         "--to-date",
         type=str,
         help="End datetime (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)",
+    )
+    parser.add_argument(
+        "--start-date",
+        type=str,
+        help="Alias for --from-date",
+    )
+    parser.add_argument(
+        "--end-date",
+        type=str,
+        help="Alias for --to-date",
+    )
+    parser.add_argument(
+        "--filter-level",
+        type=str,
+        help="Single level filter alias (e.g. ERROR)",
+    )
+    parser.add_argument(
+        "--show-errors-per-hour",
+        action="store_true",
+        help="Print per-hour counts for selected --error-type",
+    )
+    parser.add_argument(
+        "--show-level-counts",
+        action="store_true",
+        help="Print level counts",
+    )
+    parser.add_argument(
+        "--top-error-hours",
+        type=int,
+        default=0,
+        help="Print only top N per-hour rows (0 = disabled)",
+    )
+    parser.add_argument(
+        "--error-type",
+        choices=["ERROR", "WARNING", "INFO", "FATAL"],
+        default="ERROR",
+        help="Event level used for per-hour time statistics",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        help="Limit number of printed rows in selected outputs",
     )
     parser.add_argument(
         "--output-json",
@@ -80,14 +129,48 @@ def main():
 
     args = parser.parse_args()
 
+    levels = list(args.levels)
+    if args.filter_level:
+        levels.append(args.filter_level)
+
+    phrases = list(args.phrases)
+    if args.phrase:
+        phrases.extend(args.phrase)
+
+    from_date = args.start_date or args.from_date
+    to_date = args.end_date or args.to_date
+
     config = AnalysisConfig.from_iterables(
-        phrases=args.phrases,
-        levels=args.levels,
-        date_from=_parse_datetime(args.from_date),
-        date_to=_parse_datetime(args.to_date, is_end=True),
+        phrases=phrases,
+        levels=levels,
+        error_type=args.error_type,
+        limit=args.limit,
+        date_from=_parse_datetime(from_date),
+        date_to=_parse_datetime(to_date, is_end=True),
     )
     result = analyze_log_file(args.input, config)
-    print_report(result)
+    print_report(result, limit=args.limit)
+
+    if args.show_level_counts:
+        print("\n=== LEVEL COUNTS (CLI VIEW) ===")
+        items = list(result.level_counts.items())
+        if args.limit:
+            items = items[: args.limit]
+        for level, count in items:
+            print(f"{level}: {count}")
+
+    if args.show_errors_per_hour:
+        print(f"\n=== {args.error_type} PER HOUR (CLI VIEW) ===")
+        hour_items = list(result.errors_per_hour.items())
+        if args.top_error_hours > 0:
+            hour_items = top_error_hours(result, top_n=args.top_error_hours)
+        if args.limit:
+            hour_items = hour_items[: args.limit]
+        if not hour_items:
+            print(f"No {args.error_type} events found.")
+        else:
+            for hour, count in hour_items:
+                print(f"{hour} -> {count}")
 
     with open(args.input, "r", encoding="utf-8") as handle:
         lines = handle.readlines()

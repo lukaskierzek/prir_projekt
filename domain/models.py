@@ -18,6 +18,8 @@ class LogRecord:
 class AnalysisConfig:
     phrases: tuple[str, ...] = ("ERROR", "WARNING", "INFO")
     levels: tuple[str, ...] = ()
+    error_type: str = "ERROR"
+    limit: int | None = None
     date_from: datetime | None = None
     date_to: datetime | None = None
 
@@ -25,12 +27,16 @@ class AnalysisConfig:
     def from_iterables(
         phrases: Iterable[str] | None = None,
         levels: Iterable[str] | None = None,
+        error_type: str = "ERROR",
+        limit: int | None = None,
         date_from: datetime | None = None,
         date_to: datetime | None = None,
     ) -> "AnalysisConfig":
         return AnalysisConfig(
             phrases=tuple(phrases or ("ERROR", "WARNING", "INFO")),
             levels=tuple(level.upper() for level in (levels or ())),
+            error_type=error_type.upper(),
+            limit=limit,
             date_from=date_from,
             date_to=date_to,
         )

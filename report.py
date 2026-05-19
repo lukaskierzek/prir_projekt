@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def print_report(result: AnalysisResult) -> None:
+def print_report(result: AnalysisResult, limit: int | None = None) -> None:
     print("\n=== SUMMARY ===")
     print(f"Total lines: {result.total_lines}")
     print(f"Parsed lines: {result.parsed_lines}")
@@ -22,11 +22,15 @@ def print_report(result: AnalysisResult) -> None:
     if not result.errors_per_hour:
         print("No ERROR events found.")
     else:
-        for hour, count in result.errors_per_hour.items():
+        hour_items = list(result.errors_per_hour.items())
+        if limit:
+            hour_items = hour_items[:limit]
+        for hour, count in hour_items:
             print(f"{hour} -> {count}")
 
     print("\n=== FILTERED LINES (first 10) ===")
-    for line in result.filtered_lines[:10]:
+    line_limit = limit if limit is not None else 10
+    for line in result.filtered_lines[:line_limit]:
         print(line)
     print(f"Matched lines: {len(result.filtered_lines)}")
 
