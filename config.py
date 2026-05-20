@@ -28,9 +28,10 @@ PLOTS_DIR = PROJECT_ROOT / "plots"
 DEFAULT_ROWS_DISPLAY = 10
 
 # Analysis defaults
-DEFAULT_PHRASES = ("ERROR", "WARNING", "INFO")
-DEFAULT_LEVELS: tuple[str, ...] = ()
 DEFAULT_INPUT_LOG = GENERATED_200K
+
+DEFAULT_PHRASES: tuple[str, ...] = ()
+DEFAULT_LEVELS: tuple[str, ...] = ()
 DATETIME_INPUT_FORMAT = "%Y-%m-%d %H:%M:%S"
 DATE_ONLY_INPUT_FORMAT = "%Y-%m-%d"
 

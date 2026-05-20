@@ -27,8 +27,10 @@ def analyze_log_file(file_path: str, config: AnalysisConfig) -> AnalysisResult:
             _update_phrase_counts(record, phrase_counts, config.phrases)
             _update_error_hour_stats(record, errors_per_hour, config.error_type)
 
-            if matches_level_filter(record, config.levels) and matches_date_range(
-                record, config.date_from, config.date_to
+            if (
+                _matches_phrase_filter(record, config.phrases)
+                and matches_level_filter(record, config.levels)
+                and matches_date_range(record, config.date_from, config.date_to)
             ):
                 filtered_lines.append(record.raw_line.rstrip("\n"))
 
@@ -59,3 +61,10 @@ def _update_error_hour_stats(
         return
     hour_bucket = record.timestamp.strftime("%Y-%m-%d %H:00")
     errors_per_hour[hour_bucket] += 1
+
+
+def _matches_phrase_filter(record: LogRecord, phrases: tuple[str, ...]) -> bool:
+    if not phrases:
+        return True
+    message_upper = record.message.upper()
+    return any(phrase.upper() in message_upper for phrase in phrases)

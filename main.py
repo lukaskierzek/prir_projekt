@@ -1,7 +1,7 @@
 import argparse
 from datetime import datetime
 
-from config import DATE_ONLY_INPUT_FORMAT, DATETIME_INPUT_FORMAT, DEFAULT_PHRASES
+from config import DATE_ONLY_INPUT_FORMAT, DATETIME_INPUT_FORMAT
 from domain.models import AnalysisConfig
 from parallel.mpi.runner import run_mpi_token_count
 from parallel.openmp.benchmark import benchmark_openmp
@@ -37,11 +37,17 @@ def main():
         default=[],
         help="Filter by levels, e.g. ERROR WARNING INFO",
     )
+    parser.add_argument(
+        "--level",
+        action="append",
+        default=[],
+        help="Single level filter, can be repeated (e.g. --level ERROR --level WARNING)",
+    )
 
     parser.add_argument(
         "--phrases",
         nargs="*",
-        default=list(DEFAULT_PHRASES),
+        default=[],
         help="Phrases to count in message content",
     )
     parser.add_argument(
@@ -130,6 +136,8 @@ def main():
     args = parser.parse_args()
 
     levels = list(args.levels)
+    if args.level:
+        levels.extend(args.level)
     if args.filter_level:
         levels.append(args.filter_level)
 

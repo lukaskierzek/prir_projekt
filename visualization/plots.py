@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 from datetime import datetime
+from pathlib import Path
 
 
 def print_dataframe(
@@ -80,6 +81,170 @@ def plot_errors_per_hour(
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path)
+        plt.close()
+        return
+    plt.show()
+
+
+def plot_speedup_efficiency(
+    units: list[int],
+    speedup: list[float],
+    efficiency: list[float],
+    label: str,
+    units_label: str,
+    save_path: str,
+) -> None:
+    fig, ax = plt.subplots(1, 2, figsize=(12, 4))
+    ax[0].plot(units, speedup, marker="o", label=label)
+    ax[0].plot(units, units, linestyle="--", label="Ideal")
+    ax[0].set_xlabel(units_label)
+    ax[0].set_ylabel("Przyspieszenie")
+    ax[0].set_title(f"{label} Speedup")
+    ax[0].grid(True)
+    ax[0].legend()
+
+    ax[1].plot(units, efficiency, marker="o", label=label)
+    ax[1].axhline(1.0, linestyle="--")
+    ax[1].set_xlabel(units_label)
+    ax[1].set_ylabel("Efektywność")
+    ax[1].set_title(f"{label} Efficiency")
+    ax[1].grid(True)
+    ax[1].legend()
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=150)
+    plt.close()
+
+
+def plot_parallel_comparison(
+    openmp_rows: list[dict[str, float]],
+    mpi_rows: list[dict[str, float]],
+    save_path: str | None = None,
+) -> dict[str, float]:
+    openmp_rows = sorted(openmp_rows, key=lambda r: r["units"])
+    mpi_rows = sorted(mpi_rows, key=lambda r: r["units"])
+
+    seq_candidates = [r["time"] for r in openmp_rows if r["units"] == 1] + [
+        r["time"] for r in mpi_rows if r["units"] == 1
+    ]
+    if not seq_candidates:
+        raise RuntimeError(
+            "Brak pomiaru sekwencyjnego (1). Uruchom benchmarki dla 1 worker/process."
+        )
+    seq_time = min(seq_candidates)
+
+    openmp_speedup = [(r["units"], seq_time / r["time"]) for r in openmp_rows]
+    mpi_speedup = [(r["units"], seq_time / r["time"]) for r in mpi_rows]
+
+    fig, ax = plt.subplots(1, 2, figsize=(13, 4))
+    ax[0].plot([1], [seq_time], marker="o", label="Sequential (baseline)")
+    ax[0].plot(
+        [r["units"] for r in openmp_rows],
+        [r["time"] for r in openmp_rows],
+        marker="o",
+        label="OpenMP-like",
+    )
+    ax[0].plot(
+        [r["units"] for r in mpi_rows],
+        [r["time"] for r in mpi_rows],
+        marker="o",
+        label="MPI",
+    )
+    ax[0].set_xlabel("Workers / Processes")
+    ax[0].set_ylabel("Time [s]")
+    ax[0].set_title("Execution Time Comparison")
+    ax[0].grid(True)
+    ax[0].legend()
+
+    ax[1].plot(
+        [u for u, _ in openmp_speedup],
+        [s for _, s in openmp_speedup],
+        marker="o",
+        label="OpenMP-like",
+    )
+    ax[1].plot(
+        [u for u, _ in mpi_speedup],
+        [s for _, s in mpi_speedup],
+        marker="o",
+        label="MPI",
+    )
+    max_units = max([u for u, _ in openmp_speedup] + [u for u, _ in mpi_speedup])
+    ax[1].plot(
+        list(range(1, max_units + 1)),
+        list(range(1, max_units + 1)),
+        linestyle="--",
+        label="Ideal",
+    )
+    ax[1].set_xlabel("Workers / Processes")
+    ax[1].set_ylabel("Speedup vs sequential")
+    ax[1].set_title("Speedup Comparison")
+    ax[1].grid(True)
+    ax[1].legend()
+
+    plt.tight_layout()
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, dpi=150)
+        plt.close()
+    else:
+        plt.show()
+
+    return {
+        "sequential_time_s": round(seq_time, 6),
+        "best_openmp_time_s": round(min(r["time"] for r in openmp_rows), 6),
+        "best_mpi_time_s": round(min(r["time"] for r in mpi_rows), 6),
+    }
+
+
+def plot_level_counts(
+    level_counts: dict[str, int],
+    title: str = "Liczba logów per level",
+    save_path: str | None = None,
+) -> None:
+    if not level_counts:
+        print("plot_level_counts: no data to plot (empty level_counts).")
+        return
+
+    items = sorted(level_counts.items(), key=lambda x: x[1], reverse=True)
+    levels = [k for k, _ in items]
+    counts = [v for _, v in items]
+
+    plt.figure(figsize=(10, 4))
+    plt.bar(levels, counts)
+    plt.title(title)
+    plt.xlabel("Level")
+    plt.ylabel("Count")
+    plt.tight_layout()
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, dpi=150)
+        plt.close()
+        return
+    plt.show()
+
+
+def plot_level_filter_comparison(
+    level_compare: dict[str, int],
+    title: str = "Dopasowania dla filtru --level",
+    save_path: str | None = None,
+) -> None:
+    if not level_compare:
+        print("plot_level_filter_comparison: no data to plot (empty level_compare).")
+        return
+
+    items = list(level_compare.items())
+    levels = [k for k, _ in items]
+    counts = [v for _, v in items]
+
+    plt.figure(figsize=(8, 4))
+    plt.bar(levels, counts)
+    plt.title(title)
+    plt.xlabel("Level")
+    plt.ylabel("Matched lines")
+    plt.tight_layout()
+    if save_path:
+        Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+        plt.savefig(save_path, dpi=150)
         plt.close()
         return
     plt.show()

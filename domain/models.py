@@ -16,7 +16,7 @@ class LogRecord:
 
 @dataclass(frozen=True)
 class AnalysisConfig:
-    phrases: tuple[str, ...] = ("ERROR", "WARNING", "INFO")
+    phrases: tuple[str, ...] = ()
     levels: tuple[str, ...] = ()
     error_type: str = "ERROR"
     limit: int | None = None
@@ -33,7 +33,7 @@ class AnalysisConfig:
         date_to: datetime | None = None,
     ) -> "AnalysisConfig":
         return AnalysisConfig(
-            phrases=tuple(phrases or ("ERROR", "WARNING", "INFO")),
+            phrases=tuple(phrases or ()),
             levels=tuple(level.upper() for level in (levels or ())),
             error_type=error_type.upper(),
             limit=limit,
