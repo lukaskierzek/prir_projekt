@@ -122,10 +122,12 @@ def plot_speedup_efficiency(
 def plot_parallel_comparison(
     openmp_rows: list[dict[str, float]],
     mpi_rows: list[dict[str, float]],
+    cuda_rows: list[dict[str, float]] | None = None,
     save_path: str | None = None,
 ) -> dict[str, float]:
     openmp_rows = sorted(openmp_rows, key=lambda r: r["units"])
     mpi_rows = sorted(mpi_rows, key=lambda r: r["units"])
+    cuda_rows = sorted(cuda_rows or [], key=lambda r: r["units"])
 
     seq_candidates = [r["time"] for r in openmp_rows if r["units"] == 1] + [
         r["time"] for r in mpi_rows if r["units"] == 1
@@ -138,6 +140,9 @@ def plot_parallel_comparison(
 
     openmp_speedup = [(r["units"], seq_time / r["time"]) for r in openmp_rows]
     mpi_speedup = [(r["units"], seq_time / r["time"]) for r in mpi_rows]
+    cuda_speedup = [
+        (r["units"], seq_time / r["time"]) for r in cuda_rows if r["time"] > 0
+    ]
 
     fig, ax = plt.subplots(1, 2, figsize=(13, 4))
     ax[0].plot([1], [seq_time], marker="o", label="Sequential (baseline)")
@@ -153,11 +158,31 @@ def plot_parallel_comparison(
         marker="o",
         label="MPI",
     )
-    ax[0].set_xlabel("Workers / Processes")
+    if cuda_rows:
+        ax[0].plot(
+            [r["units"] for r in cuda_rows],
+            [r["time"] for r in cuda_rows],
+            marker="o",
+            label="CUDA",
+        )
+    units_label = "Workers / Processes / CUDA threads per block" if cuda_rows else "Workers / Processes"
+    ax[0].set_xlabel(units_label)
     ax[0].set_ylabel("Time [s]")
     ax[0].set_title("Execution Time Comparison")
     ax[0].grid(True)
     ax[0].legend()
+    if cuda_rows:
+        all_units = sorted(
+            {
+                *[r["units"] for r in openmp_rows],
+                *[r["units"] for r in mpi_rows],
+                *[r["units"] for r in cuda_rows],
+            }
+        )
+        ax[0].set_xscale("log", base=2)
+        ax[0].set_yscale("log")
+        ax[0].set_xticks(all_units)
+        ax[0].set_xticklabels([str(unit) for unit in all_units])
 
     ax[1].plot(
         [u for u, _ in openmp_speedup],
@@ -171,6 +196,13 @@ def plot_parallel_comparison(
         marker="o",
         label="MPI",
     )
+    if cuda_speedup:
+        ax[1].plot(
+            [u for u, _ in cuda_speedup],
+            [s for _, s in cuda_speedup],
+            marker="o",
+            label="CUDA",
+        )
     max_units = max([u for u, _ in openmp_speedup] + [u for u, _ in mpi_speedup])
     ax[1].plot(
         list(range(1, max_units + 1)),
@@ -178,11 +210,23 @@ def plot_parallel_comparison(
         linestyle="--",
         label="Ideal",
     )
-    ax[1].set_xlabel("Workers / Processes")
+    ax[1].set_xlabel(units_label)
     ax[1].set_ylabel("Speedup vs sequential")
     ax[1].set_title("Speedup Comparison")
     ax[1].grid(True)
     ax[1].legend()
+    if cuda_speedup:
+        all_units = sorted(
+            {
+                *[u for u, _ in openmp_speedup],
+                *[u for u, _ in mpi_speedup],
+                *[u for u, _ in cuda_speedup],
+            }
+        )
+        ax[1].set_xscale("log", base=2)
+        ax[1].set_yscale("log")
+        ax[1].set_xticks(all_units)
+        ax[1].set_xticklabels([str(unit) for unit in all_units])
 
     plt.tight_layout()
     if save_path:
@@ -192,11 +236,14 @@ def plot_parallel_comparison(
     else:
         plt.show()
 
-    return {
+    summary = {
         "sequential_time_s": round(seq_time, 6),
         "best_openmp_time_s": round(min(r["time"] for r in openmp_rows), 6),
         "best_mpi_time_s": round(min(r["time"] for r in mpi_rows), 6),
     }
+    if cuda_rows:
+        summary["best_cuda_time_s"] = round(min(r["time"] for r in cuda_rows), 6)
+    return summary
 
 
 def plot_level_counts(

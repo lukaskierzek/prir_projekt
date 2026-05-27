@@ -1,11 +1,7 @@
 import time
 
 from parallel.openmp.tokenizer import (
-    tokenize_and_encode_parallel
-)
-
-from parallel.openmp.histogram import (
-    build_histogram
+    count_tokens_parallel,
 )
 from parallel.openmp.reduction import (
     reduce_local_token_counters
@@ -14,38 +10,27 @@ from parallel.openmp.reduction import (
 
 def benchmark_openmp(
         lines: list[str],
-        workers: int = 4
+        workers: int = 4,
+        backend: str = "thread",
 ):
 
     start = time.perf_counter()
     total_bytes = len("".join(lines).encode("utf-8", errors="ignore"))
 
-    encoded, vocabulary, local_counters = (
-        tokenize_and_encode_parallel(
-            lines
-            , workers=workers
-        )
-    )
-
-    histogram = build_histogram(
-        encoded,
-        len(vocabulary)
-    )
-    merged_counter = reduce_local_token_counters(
-        local_counters
-    )
+    local_counters = count_tokens_parallel(lines, workers=workers, backend=backend)
+    merged_counter = reduce_local_token_counters(local_counters)
 
     end = time.perf_counter()
     elapsed = end - start
 
     return {
         "time": elapsed,
-        "tokens": len(encoded),
+        "tokens": int(sum(merged_counter.values())),
         "bytes": total_bytes,
         "throughput_gb_s": (total_bytes / elapsed / 1_000_000_000) if elapsed > 0 else 0.0,
-        "vocabulary_size": len(vocabulary),
+        "vocabulary_size": len(merged_counter),
         "workers": workers,
+        "backend": backend,
         "local_dicts": len(local_counters),
         "global_token_total_from_reduction": int(sum(merged_counter.values())),
-        "global_token_total_from_histogram": int(histogram.sum())
     }

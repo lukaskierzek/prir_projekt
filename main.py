@@ -21,6 +21,16 @@ def _parse_datetime(value: str | None, is_end: bool = False) -> datetime | None:
     return datetime.strptime(value, DATETIME_INPUT_FORMAT)
 
 
+def _mpi_rank_for_mode(parallel_mode: str) -> int:
+    if parallel_mode != "mpi":
+        return 0
+    try:
+        from mpi4py import MPI  # type: ignore
+    except Exception:
+        return 0
+    return MPI.COMM_WORLD.Get_rank()
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Log analysis for phrase counts, filtering and time stats."
@@ -141,54 +151,61 @@ def main():
     )
 
     args = parser.parse_args()
+    mpi_rank = _mpi_rank_for_mode(args.parallel_mode)
+    is_output_rank = mpi_rank == 0
 
-    levels = list(args.levels)
-    if args.level:
-        levels.extend(args.level)
-    if args.filter_level:
-        levels.append(args.filter_level)
+    result = None
+    if is_output_rank:
+        levels = list(args.levels)
+        if args.level:
+            levels.extend(args.level)
+        if args.filter_level:
+            levels.append(args.filter_level)
 
-    phrases = list(args.phrases)
-    if args.phrase:
-        phrases.extend(args.phrase)
+        phrases = list(args.phrases)
+        if args.phrase:
+            phrases.extend(args.phrase)
 
-    from_date = args.start_date or args.from_date
-    to_date = args.end_date or args.to_date
+        from_date = args.start_date or args.from_date
+        to_date = args.end_date or args.to_date
 
-    config = AnalysisConfig.from_iterables(
-        phrases=phrases,
-        levels=levels,
-        error_type=args.error_type,
-        limit=args.limit,
-        date_from=_parse_datetime(from_date),
-        date_to=_parse_datetime(to_date, is_end=True),
-    )
-    result = analyze_log_file(args.input, config)
-    print_report(result, limit=args.limit)
+        config = AnalysisConfig.from_iterables(
+            phrases=phrases,
+            levels=levels,
+            error_type=args.error_type,
+            limit=args.limit,
+            date_from=_parse_datetime(from_date),
+            date_to=_parse_datetime(to_date, is_end=True),
+        )
+        result = analyze_log_file(args.input, config)
+        print_report(result, limit=args.limit)
 
-    if args.show_level_counts:
-        print("\n=== LEVEL COUNTS (CLI VIEW) ===")
-        items = list(result.level_counts.items())
-        if args.limit:
-            items = items[: args.limit]
-        for level, count in items:
-            print(f"{level}: {count}")
+        if args.show_level_counts:
+            print("\n=== LEVEL COUNTS (CLI VIEW) ===")
+            items = list(result.level_counts.items())
+            if args.limit:
+                items = items[: args.limit]
+            for level, count in items:
+                print(f"{level}: {count}")
 
-    if args.show_errors_per_hour:
-        print(f"\n=== {args.error_type} PER HOUR (CLI VIEW) ===")
-        hour_items = list(result.errors_per_hour.items())
-        if args.top_error_hours > 0:
-            hour_items = top_error_hours(result, top_n=args.top_error_hours)
-        if args.limit:
-            hour_items = hour_items[: args.limit]
-        if not hour_items:
-            print(f"No {args.error_type} events found.")
-        else:
-            for hour, count in hour_items:
-                print(f"{hour} -> {count}")
+        if args.show_errors_per_hour:
+            print(f"\n=== {args.error_type} PER HOUR (CLI VIEW) ===")
+            hour_items = list(result.errors_per_hour.items())
+            if args.top_error_hours > 0:
+                hour_items = top_error_hours(result, top_n=args.top_error_hours)
+            if args.limit:
+                hour_items = hour_items[: args.limit]
+            if not hour_items:
+                print(f"No {args.error_type} events found.")
+            else:
+                for hour, count in hour_items:
+                    print(f"{hour} -> {count}")
 
-    with open(args.input, "r", encoding="utf-8") as handle:
-        lines = handle.readlines()
+    if args.parallel_mode == "mpi" and not is_output_rank:
+        lines = []
+    else:
+        with open(args.input, "r", encoding="utf-8") as handle:
+            lines = handle.readlines()
 
     if args.parallel_mode == "openmp":
         parallel_result = benchmark_openmp(lines, workers=args.openmp_workers)
@@ -210,10 +227,10 @@ def main():
         for key, value in cuda_result.items():
             print(f"{key}: {value}")
 
-    if args.output_json:
+    if args.output_json and result is not None:
         save_report_json(result, args.output_json)
         print(f"Saved JSON report to: {args.output_json}")
-    if args.output_filtered_csv:
+    if args.output_filtered_csv and result is not None:
         save_filtered_lines_csv(result, args.output_filtered_csv)
         print(f"Saved filtered lines CSV to: {args.output_filtered_csv}")
 

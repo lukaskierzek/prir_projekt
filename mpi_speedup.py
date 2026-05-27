@@ -6,6 +6,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 from config import DEFAULT_INPUT_LOG
+from parallel.mpi.launcher import find_mpiexec
 
 
 def parse_time(output: str) -> float:
@@ -16,17 +17,30 @@ def parse_time(output: str) -> float:
 
 
 def run_case(processes: int, input_path: str) -> float:
-    cmd = [
-        "mpiexec",
-        "-n",
-        str(processes),
-        sys.executable,
-        "main.py",
-        "--input",
-        input_path,
-        "--parallel-mode",
-        "mpi",
-    ]
+    mpiexec = find_mpiexec()
+    if mpiexec is None:
+        if processes != 1:
+            raise RuntimeError("mpiexec is not available; only 1-process fallback can run.")
+        cmd = [
+            sys.executable,
+            "main.py",
+            "--input",
+            input_path,
+            "--parallel-mode",
+            "mpi",
+        ]
+    else:
+        cmd = [
+            mpiexec,
+            "-n",
+            str(processes),
+            sys.executable,
+            "main.py",
+            "--input",
+            input_path,
+            "--parallel-mode",
+            "mpi",
+        ]
     completed = subprocess.run(cmd, capture_output=True, text=True, check=True)
     return parse_time(completed.stdout)
 
@@ -37,6 +51,10 @@ def main() -> None:
     parser.add_argument("--procs", nargs="+", type=int, default=[1, 2, 4, 8])
     parser.add_argument("--save-dir", default="reports")
     args = parser.parse_args()
+
+    if find_mpiexec() is None:
+        print("mpiexec not found; running MPI single-process fallback only.")
+        args.procs = [1]
 
     rows = []
     for p in args.procs:

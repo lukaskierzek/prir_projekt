@@ -12,6 +12,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default=str(DEFAULT_INPUT_LOG))
     parser.add_argument("--threads", nargs="+", type=int, default=[1, 2, 4, 8])
+    parser.add_argument("--backend", choices=["thread", "process"], default="thread")
     parser.add_argument("--save-dir", default="reports")
     args = parser.parse_args()
 
@@ -20,8 +21,12 @@ def main() -> None:
 
     rows = []
     for t in args.threads:
-        result = benchmark_openmp(lines, workers=t)
-        rows.append({"threads": t, "time": float(result["time"])})
+        result = benchmark_openmp(lines, workers=t, backend=args.backend)
+        rows.append({
+            "threads": t,
+            "time": float(result["time"]),
+            "backend": str(result["backend"]),
+        })
 
     df = pd.DataFrame(rows).sort_values("threads")
     t1 = float(df.loc[df["threads"] == 1, "time"].iloc[0])

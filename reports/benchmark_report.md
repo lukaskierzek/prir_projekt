@@ -2,15 +2,15 @@
 
 - Input bytes: 15562516
 - Input size GB: 0.015563
-- File read time s: 0.024194
-- File read throughput GB/s: 0.643247
+- File read time s: 0.022908
+- File read throughput GB/s: 0.679346
 
 ## CPU/GPU comparison
 
 | Technology | Mode | Time s | Throughput GB/s | Tokens |
 |---|---:|---:|---:|---:|
-| CPU OpenMP-like | 4 workers | 0.358491 | 0.043411 | 1649983 |
-| GPU CUDA | cuda | 0.262662 | 0.059249 | 1649983 |
+| CPU OpenMP-like | 4 workers | 0.170246 | 0.091412 | 1649983 |
+| GPU CUDA | cuda | 0.231264 | 0.067293 | 1649983 |
 
 ## Top words
 

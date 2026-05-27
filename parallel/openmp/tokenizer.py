@@ -1,5 +1,5 @@
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 
 
 def _tokenize_chunk(
@@ -28,7 +28,8 @@ def _split_chunks(
 
 def tokenize_and_encode_parallel(
         lines: list[str],
-        workers: int = 4
+        workers: int = 4,
+        backend: str = "thread",
 ) -> tuple[list[int], dict[str, int], list[Counter]]:
     """
     OpenMP-like flow:
@@ -46,7 +47,8 @@ def tokenize_and_encode_parallel(
 
     chunks = _split_chunks(lines, workers)
 
-    with ThreadPoolExecutor(max_workers=workers) as executor:
+    executor_cls = ProcessPoolExecutor if backend == "process" else ThreadPoolExecutor
+    with executor_cls(max_workers=workers) as executor:
         local_counters = list(executor.map(_tokenize_chunk, chunks))
 
     global_counter = Counter()
@@ -64,6 +66,27 @@ def tokenize_and_encode_parallel(
             encoded.append(vocabulary[word])
 
     return encoded, vocabulary, local_counters
+
+
+def count_tokens_parallel(
+        lines: list[str],
+        workers: int = 4,
+        backend: str = "process",
+) -> list[Counter]:
+    """
+    Count tokens in per-worker local dictionaries.
+
+    This is the benchmark path used for the OpenMP-like requirement:
+    parallel tokenization, local dictionaries, final reduction outside this
+    function. The process backend avoids Python's GIL for CPU-bound counting.
+    """
+    if not lines:
+        return []
+
+    chunks = _split_chunks(lines, workers)
+    executor_cls = ProcessPoolExecutor if backend == "process" else ThreadPoolExecutor
+    with executor_cls(max_workers=workers) as executor:
+        return list(executor.map(_tokenize_chunk, chunks))
 
 
 def tokenize_and_encode(
