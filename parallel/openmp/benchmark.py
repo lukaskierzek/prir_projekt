@@ -18,6 +18,7 @@ def benchmark_openmp(
 ):
 
     start = time.perf_counter()
+    total_bytes = len("".join(lines).encode("utf-8", errors="ignore"))
 
     encoded, vocabulary, local_counters = (
         tokenize_and_encode_parallel(
@@ -35,10 +36,13 @@ def benchmark_openmp(
     )
 
     end = time.perf_counter()
+    elapsed = end - start
 
     return {
-        "time": end - start,
+        "time": elapsed,
         "tokens": len(encoded),
+        "bytes": total_bytes,
+        "throughput_gb_s": (total_bytes / elapsed / 1_000_000_000) if elapsed > 0 else 0.0,
         "vocabulary_size": len(vocabulary),
         "workers": workers,
         "local_dicts": len(local_counters),

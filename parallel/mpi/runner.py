@@ -18,6 +18,7 @@ def run_mpi_token_count(lines: list[str]) -> dict[str, int | float]:
     Fallback: single-process execution (still keeps same result schema).
     """
     start = perf_counter()
+    total_bytes = len("".join(lines).encode("utf-8", errors="ignore"))
     try:
         from mpi4py import MPI  # type: ignore
     except Exception:
@@ -26,8 +27,10 @@ def run_mpi_token_count(lines: list[str]) -> dict[str, int | float]:
             "world_size": 1,
             "rank": 0,
             "tokens": int(sum(local_counter.values())),
+            "bytes": total_bytes,
             "vocabulary_size": len(local_counter),
             "time": perf_counter() - start,
+            "throughput_gb_s": total_bytes / (perf_counter() - start) / 1_000_000_000,
             "mode": "single-process-fallback",
         }
 
@@ -41,21 +44,27 @@ def run_mpi_token_count(lines: list[str]) -> dict[str, int | float]:
 
     gathered = comm.gather(local_counter, root=0)
     if rank != 0:
+        elapsed = perf_counter() - start
         return {
             "world_size": world_size,
             "rank": rank,
             "tokens": int(sum(local_counter.values())),
+            "bytes": len("".join(local_lines).encode("utf-8", errors="ignore")),
             "vocabulary_size": len(local_counter),
-            "time": perf_counter() - start,
+            "time": elapsed,
+            "throughput_gb_s": 0.0,
             "mode": "worker",
         }
 
     merged = merge_token_counters(gathered)
+    elapsed = perf_counter() - start
     return {
         "world_size": world_size,
         "rank": 0,
         "tokens": int(sum(merged.values())),
+        "bytes": total_bytes,
         "vocabulary_size": len(merged),
-        "time": perf_counter() - start,
+        "time": elapsed,
+        "throughput_gb_s": (total_bytes / elapsed / 1_000_000_000) if elapsed > 0 else 0.0,
         "mode": "mpi-root",
     }

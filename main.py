@@ -3,6 +3,7 @@ from datetime import datetime
 
 from config import DATE_ONLY_INPUT_FORMAT, DATETIME_INPUT_FORMAT
 from domain.models import AnalysisConfig
+from parallel.cuda.benchmark import benchmark_cuda
 from parallel.mpi.runner import run_mpi_token_count
 from parallel.openmp.benchmark import benchmark_openmp
 from processing.analyzer import analyze_log_file
@@ -122,7 +123,7 @@ def main():
     )
     parser.add_argument(
         "--parallel-mode",
-        choices=["none", "openmp", "mpi"],
+        choices=["none", "openmp", "mpi", "cuda"],
         default="none",
         help="Run additional parallel token benchmark path",
     )
@@ -131,6 +132,12 @@ def main():
         type=int,
         default=4,
         help="Workers for OpenMP-like Python benchmark path",
+    )
+    parser.add_argument(
+        "--cuda-threads-per-block",
+        type=int,
+        default=256,
+        help="Threads per CUDA block for CUDA benchmark path",
     )
 
     args = parser.parse_args()
@@ -194,6 +201,14 @@ def main():
             print("\n=== MPI TOKENIZATION ===")
             for key, value in mpi_result.items():
                 print(f"{key}: {value}")
+    elif args.parallel_mode == "cuda":
+        cuda_result = benchmark_cuda(
+            lines,
+            threads_per_block=args.cuda_threads_per_block,
+        )
+        print("\n=== CUDA TOKENIZATION ===")
+        for key, value in cuda_result.items():
+            print(f"{key}: {value}")
 
     if args.output_json:
         save_report_json(result, args.output_json)

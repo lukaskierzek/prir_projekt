@@ -1,4 +1,7 @@
-import matplotlib.pyplot as plt
+try:
+    import matplotlib.pyplot as plt
+except ModuleNotFoundError:
+    plt = None
 from datetime import datetime
 from pathlib import Path
 
@@ -248,3 +251,53 @@ def plot_level_filter_comparison(
         plt.close()
         return
     plt.show()
+
+
+def plot_top_words(
+    words: list[tuple[str, int]],
+    save_path: str,
+    title: str = "Top-N words",
+) -> None:
+    if plt is None:
+        print("plot_top_words: matplotlib is not installed; skipping plot.")
+        return
+    if not words:
+        print("plot_top_words: no words to plot.")
+        return
+
+    labels = [word for word, _ in reversed(words)]
+    counts = [count for _, count in reversed(words)]
+
+    plt.figure(figsize=(10, 6))
+    plt.barh(labels, counts)
+    plt.title(title)
+    plt.xlabel("Count")
+    plt.tight_layout()
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(save_path, dpi=150)
+    plt.close()
+
+
+def plot_cpu_gpu_comparison(
+    rows: list[dict[str, float | str]],
+    save_path: str,
+) -> None:
+    if plt is None:
+        print("plot_cpu_gpu_comparison: matplotlib is not installed; skipping plot.")
+        return
+    if not rows:
+        print("plot_cpu_gpu_comparison: no benchmark rows to plot.")
+        return
+
+    labels = [str(row["technology"]) for row in rows]
+    throughput = [float(row["throughput_gb_s"]) for row in rows]
+
+    plt.figure(figsize=(8, 4))
+    plt.bar(labels, throughput)
+    plt.ylabel("Throughput [GB/s]")
+    plt.title("CPU/GPU throughput comparison")
+    plt.grid(axis="y")
+    plt.tight_layout()
+    Path(save_path).parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(save_path, dpi=150)
+    plt.close()

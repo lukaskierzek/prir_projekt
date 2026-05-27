@@ -2,9 +2,11 @@ from datetime import datetime
 from pathlib import Path
 
 from domain.models import AnalysisConfig
+from parallel.cuda.benchmark import benchmark_cuda
 from parser.log_parser import parse_line_to_record
 from processing.analyzer import analyze_log_file
 from processing.filters import matches_date_range, matches_level_filter
+from processing.top_words import top_words
 
 
 def test_parse_line_to_record_success() -> None:
@@ -53,3 +55,18 @@ def test_analyze_log_file(tmp_path: Path) -> None:
     assert result.level_counts == {"ERROR": 1, "INFO": 1, "WARNING": 1}
     assert len(result.filtered_lines) == 2
     assert result.errors_per_hour == {"2026-05-12 10:00": 1}
+
+
+def test_cuda_benchmark_schema() -> None:
+    result = benchmark_cuda(["alpha beta\n", "gamma\n"], threads_per_block=64)
+    assert result["tokens"] == 3
+    assert result["bytes"] == len("alpha beta\ngamma\n".encode("utf-8"))
+    assert "throughput_gb_s" in result
+    assert "mode" in result
+
+
+def test_top_words() -> None:
+    assert top_words(["ERROR info ERROR\n", "warning info\n"], top_n=2) == [
+        ("ERROR", 2),
+        ("INFO", 2),
+    ]

@@ -1,9 +1,10 @@
 # Parallel Log Analysis (Python Only)
 
-Aktualny zakres:
-- analiza logów i filtrowanie,
-- OpenMP-like w Pythonie: równoległa tokenizacja, lokalne słowniki/liczniki, końcowa redukcja,
-- przygotowane podłoże pod MPI (`mpi4py`): podział danych między procesy i łączenie wyników.
+Zakres projektu:
+- analiza logow i filtrowanie,
+- OpenMP-like w Pythonie: rownolegla tokenizacja, lokalne slowniki/liczniki, koncowa redukcja,
+- MPI (`mpi4py`): podzial danych miedzy procesy i laczenie wynikow,
+- CUDA (`numba.cuda`): zliczanie tokenow i histogramu bajtow na GPU, z CPU fallbackiem gdy CUDA nie jest dostepna.
 
 ## Szybki start
 
@@ -13,7 +14,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-## Uruchomienie analizy bazowej
+## Analiza bazowa
 
 ```bash
 python main.py --input data/raw/Hadoop_2k.log
@@ -31,23 +32,54 @@ python main.py --input data/raw/Hadoop_2k.log --parallel-mode openmp --openmp-wo
 python main.py --input data/raw/Hadoop_2k.log --parallel-mode mpi
 ```
 
-## MPI (wiele procesów)
+## MPI (wiele procesow)
 
 ```bash
 mpiexec -n 4 python main.py --input data/raw/Hadoop_2k.log --parallel-mode mpi
 ```
 
-## Wykresy przyspieszenia i efektywności
+## CUDA
 
-Notebook: `experiments.ipynb` (dodane komórki benchmarkowe)  
-Skrypt porównawczy: `best_comparison.py`  
-Alias (deprecated): `experiments_openmp_mpi.py`
+```bash
+python main.py --input data/raw/Hadoop_2k.log --parallel-mode cuda --cuda-threads-per-block 256
+```
+
+Benchmark CUDA:
+
+```bash
+python cuda_speedup.py --input data/raw/Hadoop_200k.log --threads-per-block 64 128 256 512
+```
+
+## Wyniki do raportu
+
+Ten skrypt generuje top-N slow, porownanie CPU/GPU, przepustowosc GB/s oraz krotki
+wniosek o tym, czy I/O jest waskim gardlem:
+
+```bash
+python benchmark_report.py --input data/raw/Hadoop_200k.log --openmp-workers 4 --top-n 20
+```
+
+Wyniki:
+- `reports/benchmark_cpu_gpu.csv`
+- `reports/top_words.csv`
+- `reports/benchmark_report.md`
+- `reports/plots/cpu_gpu_throughput.png`
+- `reports/plots/top_words.png`
+
+## Wykresy przyspieszenia i efektywnosci
+
+Notebook: `experiments.ipynb`  
+OpenMP benchmark: `openmp_speedup.py`  
+MPI benchmark: `mpi_speedup.py`  
+CUDA benchmark: `cuda_speedup.py`  
+Raport CPU/GPU + top-N: `benchmark_report.py`  
+Porownanie najlepszych wynikow: `best_comparison.py`  
+Alias deprecated: `experiments_openmp_mpi.py`
 
 ## Technologie
 
 - Python 3.11
 - numpy, pandas, matplotlib
-- numba (OpenMP-like ścieżki obliczeń)
+- numba / numba.cuda
 - mpi4py
 - pytest
-
