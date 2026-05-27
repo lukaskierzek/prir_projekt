@@ -1,26 +1,41 @@
 # Benchmark report
 
-- Input bytes: 382949
-- Input size GB: 0.000383
-- File read time s: 0.000652
-- File read throughput GB/s: 0.587255
+- Input bytes: 15562516
+- Input size GB: 0.015563
+- File read time s: 0.022538
+- File read throughput GB/s: 0.690501
 
 ## CPU/GPU comparison
 
 | Technology | Mode | Time s | Throughput GB/s | Tokens |
 |---|---:|---:|---:|---:|
-| CPU OpenMP-like | 2 workers | 0.004883 | 0.078420 | 29145 |
-| GPU CUDA | cpu-fallback | 0.017682 | 0.021658 | 29145 |
+| CPU OpenMP-like | 4 workers | 0.374953 | 0.041505 | 1649983 |
+| GPU CUDA | cpu-fallback | 0.649446 | 0.023963 | 1649983 |
 
 ## Top words
 
 | Word | Count |
 |---|---:|
-| 18 | 2045 |
-| 2015-10-18 | 2000 |
-| MSRA-SA-41 | 1763 |
-| 9000 | 1324 |
-| INFO | 1040 |
+| 000 | 200000 |
+| MAIN | 200000 |
+| INFO | 173322 |
+| ERROR | 73814 |
+| MRAPPMASTER | 33527 |
+| SPECULATOR | 33515 |
+| TASK | 33473 |
+| WARNING | 33466 |
+| CONTAINERALLOCATOR | 33455 |
+| CONTAINER | 33437 |
+| TASKDISPATCHER | 33269 |
+| SUCCESSFUL | 33260 |
+| ASYNCDISPATCHER | 33191 |
+| JOBHISTORYUTILS | 33043 |
+| WARN | 30092 |
+| FATAL | 22285 |
+| EXECUTION | 16812 |
+| STARTED | 16812 |
+| REGISTERING | 16794 |
+| DISPATCHER | 16794 |
 
 ## I/O bottleneck conclusion
 
