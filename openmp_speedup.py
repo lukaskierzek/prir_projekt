@@ -1,8 +1,12 @@
 import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import pandas as pd
+from visualization.matplotlib_setup import configure_matplotlib
+
+configure_matplotlib()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 from config import DEFAULT_INPUT_LOG
 from parallel.openmp.benchmark import benchmark_openmp
@@ -41,23 +45,23 @@ def main() -> None:
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     ax[0].plot(df["threads"], df["speedup"], marker="o", label="OpenMP-like")
     ax[0].plot(df["threads"], df["threads"], linestyle="--", label="Ideal")
-    ax[0].set_xlabel("Liczba wątków")
-    ax[0].set_ylabel("Przyspieszenie")
+    ax[0].set_xlabel("Threads")
+    ax[0].set_ylabel("Speedup")
     ax[0].set_title("OpenMP-like Speedup")
     ax[0].grid(True)
     ax[0].legend()
 
     ax[1].plot(df["threads"], df["efficiency"], marker="o", label="OpenMP-like")
     ax[1].axhline(1.0, linestyle="--")
-    ax[1].set_xlabel("Liczba wątków")
-    ax[1].set_ylabel("Efektywność")
+    ax[1].set_xlabel("Threads")
+    ax[1].set_ylabel("Efficiency")
     ax[1].set_title("OpenMP-like Efficiency")
     ax[1].grid(True)
     ax[1].legend()
 
     plt.tight_layout()
     plt.savefig(plots_dir / "openmp_speedup_efficiency.png", dpi=150)
-    plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":

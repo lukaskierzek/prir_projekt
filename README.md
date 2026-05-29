@@ -74,11 +74,21 @@ MPI benchmark: `mpi_speedup.py`
 CUDA benchmark: `cuda_speedup.py`  
 Raport CPU/GPU + top-N: `benchmark_report.py`  
 Porownanie najlepszych wynikow: `best_comparison.py`  
-Alias deprecated: `experiments_openmp_mpi.py`
+Dodatkowe wykresy do raportu: `extra_visualizations.py`
+
+```bash
+python extra_visualizations.py --input data/raw/Hadoop_200k.log
+```
+
+Wyniki:
+- `reports/plots/level_counts.png`
+- `reports/plots/top_error_hours.png`
+- `reports/plots/io_vs_compute_time.png`
+- `reports/plots/openmp_mpi_speedup.png`
 
 ## Technologie
 
-- Python 3.11
+- Python 3.11+
 - numpy, pandas, matplotlib
 - numba / numba.cuda
 - mpi4py

@@ -1,8 +1,12 @@
 import argparse
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import pandas as pd
+from visualization.matplotlib_setup import configure_matplotlib
+
+configure_matplotlib()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 from config import DEFAULT_INPUT_LOG
 from parallel.cuda.benchmark import benchmark_cuda
@@ -60,7 +64,7 @@ def main() -> None:
 
     plt.tight_layout()
     plt.savefig(plots_dir / "cuda_speedup_efficiency.png", dpi=150)
-    plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":

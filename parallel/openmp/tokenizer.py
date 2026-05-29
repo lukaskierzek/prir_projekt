@@ -32,7 +32,7 @@ def tokenize_and_encode_parallel(
         backend: str = "thread",
 ) -> tuple[list[int], dict[str, int], list[Counter]]:
     """
-    OpenMP-like flow:
+    Parallel tokenization flow:
     1) Parallel tokenization into local counters.
     2) Final reduction of local counters.
     3) Build global vocabulary and encoded stream.
@@ -74,11 +74,10 @@ def count_tokens_parallel(
         backend: str = "process",
 ) -> list[Counter]:
     """
-    Count tokens in per-worker local dictionaries.
+    Count tokens in local per-worker dictionaries.
 
-    This is the benchmark path used for the OpenMP-like requirement:
-    parallel tokenization, local dictionaries, final reduction outside this
-    function. The process backend avoids Python's GIL for CPU-bound counting.
+    Reduction is intentionally done by the caller so the benchmark can report
+    the tokenization and merge phases separately.
     """
     if not lines:
         return []

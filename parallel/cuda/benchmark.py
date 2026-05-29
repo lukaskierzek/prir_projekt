@@ -51,8 +51,8 @@ def benchmark_cuda(
     """
     Count text tokens and byte frequencies with a CUDA kernel.
 
-    Python string tokenization is not GPU-friendly, so this path flattens the
-    log into bytes and runs a stable CUDA workload over that representation.
+    Text is flattened to bytes so the kernel can count token starts and byte
+    frequencies without Python string handling on the device.
     """
     if threads_per_block <= 0:
         raise ValueError("threads_per_block must be > 0")
