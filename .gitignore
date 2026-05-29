@@ -1,0 +1,9 @@
+.idea/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+projekt.zip
