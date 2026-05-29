@@ -1,9 +1,14 @@
-try:
-    import matplotlib.pyplot as plt
-except ModuleNotFoundError:
-    plt = None
 from datetime import datetime
 from pathlib import Path
+
+from visualization.matplotlib_setup import configure_matplotlib
+
+configure_matplotlib()
+
+try:
+    import matplotlib.pyplot as plt  # noqa: E402
+except ModuleNotFoundError:
+    plt = None
 
 
 def print_dataframe(
@@ -101,7 +106,7 @@ def plot_speedup_efficiency(
     ax[0].plot(units, speedup, marker="o", label=label)
     ax[0].plot(units, units, linestyle="--", label="Ideal")
     ax[0].set_xlabel(units_label)
-    ax[0].set_ylabel("Przyspieszenie")
+    ax[0].set_ylabel("Speedup")
     ax[0].set_title(f"{label} Speedup")
     ax[0].grid(True)
     ax[0].legend()
@@ -109,7 +114,7 @@ def plot_speedup_efficiency(
     ax[1].plot(units, efficiency, marker="o", label=label)
     ax[1].axhline(1.0, linestyle="--")
     ax[1].set_xlabel(units_label)
-    ax[1].set_ylabel("Efektywność")
+    ax[1].set_ylabel("Efficiency")
     ax[1].set_title(f"{label} Efficiency")
     ax[1].grid(True)
     ax[1].legend()
@@ -134,7 +139,7 @@ def plot_parallel_comparison(
     ]
     if not seq_candidates:
         raise RuntimeError(
-            "Brak pomiaru sekwencyjnego (1). Uruchom benchmarki dla 1 worker/process."
+            "Missing sequential measurement (1). Run benchmarks for 1 worker/process."
         )
     seq_time = min(seq_candidates)
 
@@ -165,7 +170,11 @@ def plot_parallel_comparison(
             marker="o",
             label="CUDA",
         )
-    units_label = "Workers / Processes / CUDA threads per block" if cuda_rows else "Workers / Processes"
+    units_label = (
+        "Workers / Processes / CUDA threads per block"
+        if cuda_rows
+        else "Workers / Processes"
+    )
     ax[0].set_xlabel(units_label)
     ax[0].set_ylabel("Time [s]")
     ax[0].set_title("Execution Time Comparison")
@@ -248,7 +257,7 @@ def plot_parallel_comparison(
 
 def plot_level_counts(
     level_counts: dict[str, int],
-    title: str = "Liczba logów per level",
+    title: str = "Log count by level",
     save_path: str | None = None,
 ) -> None:
     if not level_counts:
@@ -275,7 +284,7 @@ def plot_level_counts(
 
 def plot_level_filter_comparison(
     level_compare: dict[str, int],
-    title: str = "Dopasowania dla filtru --level",
+    title: str = "Matches for --level filter",
     save_path: str | None = None,
 ) -> None:
     if not level_compare:

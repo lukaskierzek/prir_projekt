@@ -3,8 +3,12 @@ import subprocess
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import pandas as pd
+from visualization.matplotlib_setup import configure_matplotlib
+
+configure_matplotlib()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 from config import DEFAULT_INPUT_LOG
 from parallel.mpi.launcher import find_mpiexec
 
@@ -20,7 +24,9 @@ def run_case(processes: int, input_path: str) -> float:
     mpiexec = find_mpiexec()
     if mpiexec is None:
         if processes != 1:
-            raise RuntimeError("mpiexec is not available; only 1-process fallback can run.")
+            raise RuntimeError(
+                "mpiexec is not available; only 1-process fallback can run."
+            )
         cmd = [
             sys.executable,
             "main.py",
@@ -74,23 +80,23 @@ def main() -> None:
     fig, ax = plt.subplots(1, 2, figsize=(12, 4))
     ax[0].plot(df["processes"], df["speedup"], marker="o", label="MPI")
     ax[0].plot(df["processes"], df["processes"], linestyle="--", label="Ideal")
-    ax[0].set_xlabel("Liczba procesów")
-    ax[0].set_ylabel("Przyspieszenie")
+    ax[0].set_xlabel("Processes")
+    ax[0].set_ylabel("Speedup")
     ax[0].set_title("MPI Speedup")
     ax[0].grid(True)
     ax[0].legend()
 
     ax[1].plot(df["processes"], df["efficiency"], marker="o", label="MPI")
     ax[1].axhline(1.0, linestyle="--")
-    ax[1].set_xlabel("Liczba procesów")
-    ax[1].set_ylabel("Efektywność")
+    ax[1].set_xlabel("Processes")
+    ax[1].set_ylabel("Efficiency")
     ax[1].set_title("MPI Efficiency")
     ax[1].grid(True)
     ax[1].legend()
 
     plt.tight_layout()
     plt.savefig(plots_dir / "mpi_speedup_efficiency.png", dpi=150)
-    plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":

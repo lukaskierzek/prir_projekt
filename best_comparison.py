@@ -3,26 +3,46 @@ import subprocess
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-import pandas as pd
+from visualization.matplotlib_setup import configure_matplotlib
+
+configure_matplotlib()
+
+import matplotlib.pyplot as plt  # noqa: E402
+import pandas as pd  # noqa: E402
 
 from config import DEFAULT_INPUT_LOG
 from parallel.cuda.benchmark import benchmark_cuda
+from parallel.mpi.launcher import find_mpiexec
 from parallel.openmp.benchmark import benchmark_openmp
 
 
 def mpi_time(processes: int, input_path: str) -> float:
-    cmd = [
-        "mpiexec",
-        "-n",
-        str(processes),
-        sys.executable,
-        "main.py",
-        "--input",
-        input_path,
-        "--parallel-mode",
-        "mpi",
-    ]
+    mpiexec = find_mpiexec()
+    if mpiexec is None:
+        if processes != 1:
+            raise RuntimeError(
+                "mpiexec is not available; only 1-process fallback can run."
+            )
+        cmd = [
+            sys.executable,
+            "main.py",
+            "--input",
+            input_path,
+            "--parallel-mode",
+            "mpi",
+        ]
+    else:
+        cmd = [
+            mpiexec,
+            "-n",
+            str(processes),
+            sys.executable,
+            "main.py",
+            "--input",
+            input_path,
+            "--parallel-mode",
+            "mpi",
+        ]
     completed = subprocess.run(cmd, capture_output=True, text=True, check=True)
     for line in completed.stdout.splitlines():
         if line.strip().startswith("time:"):
@@ -46,7 +66,12 @@ def main() -> None:
         benchmark_openmp(lines, workers=threads)["time"]
         for threads in args.openmp_threads
     ]
-    mpi_times = [mpi_time(processes, args.input) for processes in args.mpi_procs]
+    mpi_procs = args.mpi_procs
+    if find_mpiexec() is None:
+        print("mpiexec not found; running MPI single-process fallback only.")
+        mpi_procs = [1]
+
+    mpi_times = [mpi_time(processes, args.input) for processes in mpi_procs]
     cuda_results = [
         benchmark_cuda(lines, threads_per_block=threads)
         for threads in args.cuda_threads_per_block
@@ -81,7 +106,7 @@ def main() -> None:
     plt.grid(axis="y")
     plt.tight_layout()
     plt.savefig(plots_dir / "best_comparison_openmp_mpi_cuda.png", dpi=150)
-    plt.show()
+    plt.close()
 
 
 if __name__ == "__main__":
